@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import useSesshoPunks from "../useSesshoPunks/useSesshoPunks";
 
 const getPunkData = async (sesshoPunks, tokenId) =>{
+    console.log('que fue mano xD'+tokenId);
     const [ tokenURI,
             dna,
             owner,
@@ -34,7 +35,6 @@ const getPunkData = async (sesshoPunks, tokenId) =>{
                                 sesshoPunks.methods.getMouthType(tokenId).call(),
                                 sesshoPunks.methods.getSkinColor(tokenId).call(),
                                 sesshoPunks.methods.getTopType(tokenId).call(),]);
-
     const responseMetadata = await fetch(tokenURI);
     const metadata = await responseMetadata.json();
 
@@ -60,6 +60,32 @@ const getPunkData = async (sesshoPunks, tokenId) =>{
         };
 
 }
+
+//singular case
+const useSesshoPunkData = (tokenId = null) => {
+    const [punk, setPunk] = useState({});
+    const [loading, setLoading] = useState(true);
+    const sesshoPunks = useSesshoPunks();
+   
+    const update = useCallback(async ()=>{
+        
+        if (sesshoPunks && tokenId != null){
+            setLoading(true);
+            const punk = await getPunkData(sesshoPunks,tokenId);
+            setPunk(punk);
+            setLoading(false);
+        }
+    },[sesshoPunks,tokenId]);
+
+    useEffect(()=>{
+        update();
+    },[update])
+
+
+
+    return {loading,punk, update}
+}
+
 //plural case
 const useSesshoPunksData = () => {
     const [punks, setPunks] = useState([]);
@@ -70,7 +96,6 @@ const useSesshoPunksData = () => {
         
         if (sesshoPunks){
             setLoading(true);
-
             let tokenIds;
             const totalSupply = await sesshoPunks.methods.totalSupply().call();
             tokenIds = new Array(parseInt(totalSupply)).fill().map((_,index)=>index);
@@ -89,4 +114,6 @@ const useSesshoPunksData = () => {
 
     return {loading,punks, update}
 }
-export {useSesshoPunksData}
+
+
+export {useSesshoPunksData, useSesshoPunkData}
