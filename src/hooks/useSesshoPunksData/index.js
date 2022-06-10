@@ -1,8 +1,9 @@
+import { useWeb3React } from "@web3-react/core";
 import { useCallback, useEffect, useState } from "react";
 import useSesshoPunks from "../useSesshoPunks/useSesshoPunks";
 
 const getPunkData = async (sesshoPunks, tokenId) =>{
-    console.log('que fue mano xD'+tokenId);
+    
     const [ tokenURI,
             dna,
             owner,
@@ -87,24 +88,31 @@ const useSesshoPunkData = (tokenId = null) => {
 }
 
 //plural case
-const useSesshoPunksData = () => {
+const useSesshoPunksData = ({owner = null}={}) => {
     const [punks, setPunks] = useState([]);
     const [loading, setLoading] = useState(true);
     const sesshoPunks = useSesshoPunks();
-   
+    const {library} = useWeb3React();
     const update = useCallback(async ()=>{
-        
-        if (sesshoPunks){
+    if (sesshoPunks){
             setLoading(true);
             let tokenIds;
-            const totalSupply = await sesshoPunks.methods.totalSupply().call();
-            tokenIds = new Array(parseInt(totalSupply)).fill().map((_,index)=>index);
+            const isAddress = library.utils.isAddress(owner);
+            if (!isAddress){    
+                const totalSupply = await sesshoPunks.methods.totalSupply().call();
+                tokenIds = new Array(parseInt(totalSupply)).fill().map((_,index)=>index);
+            }else{
+                const balanceOf = await sesshoPunks.methods.balanceOf(owner).call();
+                const tokenIdsByOwner = new Array(parseInt(balanceOf)).fill().map((_,index)=>
+                            sesshoPunks.methods.tokenOfOwnerByIndex(owner,index).call());
+                tokenIds = await Promise.all(tokenIdsByOwner);
+            }
             const punkPromise = tokenIds.map((tokenId)=> getPunkData(sesshoPunks,tokenId));
             const punks = await Promise.all(punkPromise);
             setPunks(punks);
             setLoading(false);
         }
-    },[sesshoPunks]);
+    },[sesshoPunks,owner,library.utils]);
 
     useEffect(()=>{
         update();
